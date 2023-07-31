@@ -1,11 +1,5 @@
 {
   "dependencies": {
-    "com.rorygames.vhacd": {
-      "version": "file:C:/Users/rhett/Downloads/VHACD-main/VHACD-main/com.rorygames.vhacd",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {}
-    },
     "com.unity.burst": {
       "version": "1.6.5",
       "depth": 1,

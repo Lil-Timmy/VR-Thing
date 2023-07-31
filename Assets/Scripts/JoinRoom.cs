@@ -10,25 +10,17 @@ public class JoinRoom : MonoBehaviourPunCallbacks
     [SerializeField] bool isMultiplayer;
     [SerializeReference] Vector3 spawnPositionOffset;
     [SerializeField] GameObject vrMultiplayerPrefab;
-    [SerializeField] GameObject vrSingleplayerPrefab;
 
 
-    void Start()
+    void Awake()
     {
-        if (isMultiplayer)
+        if (PhotonNetwork.IsConnected)
         {
-            if (PhotonNetwork.IsConnected)
-            {
-                PhotonNetwork.Instantiate(vrMultiplayerPrefab.name, transform.position + spawnPositionOffset, Quaternion.identity);
-            }
-            else
-            {
-                PhotonNetwork.ConnectUsingSettings();
-            }
+            PhotonNetwork.Instantiate(vrMultiplayerPrefab.name, transform.position + spawnPositionOffset, Quaternion.identity);
         }
         else
         {
-            Instantiate(vrSingleplayerPrefab, transform.position + spawnPositionOffset, Quaternion.identity);
+            PhotonNetwork.ConnectUsingSettings();
         }
     }
     void JoinCreateRoom()
@@ -51,6 +43,11 @@ public class JoinRoom : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         PhotonNetwork.LoadLevel(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        Debug.Log(newPlayer);
     }
 
     public override void OnDisconnected(DisconnectCause cause)

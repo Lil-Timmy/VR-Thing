@@ -88,30 +88,30 @@
                 },
                 {
                     "name": "LeftHandClickJoystick",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "94dc18f7-517e-45dd-a6e0-9f8e0f758f6b",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "LeftHandPrimary",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "b79432eb-6b45-419c-a420-8fcd6360d29c",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "LeftHandSecondary",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "b31b1063-86b3-47b6-87a5-35b321b66436",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "RightHandActive",
@@ -169,30 +169,30 @@
                 },
                 {
                     "name": "RightHandClickJoystick",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "edd53dbc-d12c-46a7-ace8-87897846a9af",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "RightHandPrimary",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "ee8dd039-34a8-4407-b9a9-7fce96f11e47",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "RightHandSecondary",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "fac1d1a2-db1d-45f6-87fc-c2dc300bb2b8",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [

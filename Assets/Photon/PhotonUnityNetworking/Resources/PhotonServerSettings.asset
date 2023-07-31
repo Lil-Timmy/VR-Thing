@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PhotonServerSettings
   m_EditorClassIdentifier: 
   AppSettings:
-    AppIdRealtime: d4bb4b4e-10c0-4061-8b94-f0b852f51ef5
+    AppIdRealtime: 53fa9960-585e-4bbf-bc4e-1e19bf5bf37c
     AppIdFusion: 
     AppIdChat: 
     AppIdVoice: 
@@ -28,7 +28,7 @@ MonoBehaviour:
     AuthMode: 0
     EnableLobbyStatistics: 0
     NetworkLogging: 1
-  DevRegion: usw
+  DevRegion: us
   PunLogging: 0
   EnableSupportLogger: 0
   RunInBackground: 1
@@ -53,6 +53,18 @@ MonoBehaviour:
   - ReleaseObject
   - SetIK
   - SetFeet
+  - SetObjectGrabbed
+  - SyncProperties
+  - HolsterObject
+  - SyncPrevHand
+  - SetMagazine
+  - GetMagazine
+  - SyncMagazine
+  - SyncTransform
+  - SyncRay
+  - SyncObject
+  - SyncRelease
+  - AndroidHandOffsets
   DisableAutoOpenWizard: 1
-  ShowSettings: 0
+  ShowSettings: 1
   DevRegionSetOnce: 1

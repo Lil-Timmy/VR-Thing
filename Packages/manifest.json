@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.rorygames.vhacd": "file:C:/Users/rhett/Downloads/VHACD-main/VHACD-main/com.rorygames.vhacd",
     "com.unity.collab-proxy": "1.15.18",
     "com.unity.feature.development": "1.0.1",
     "com.unity.ide.rider": "3.0.14",
