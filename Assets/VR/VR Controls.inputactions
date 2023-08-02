@@ -429,8 +429,30 @@
                 },
                 {
                     "name": "",
+                    "id": "88bc5e0c-93d3-4dc8-8f8e-ce0f4f176e75",
+                    "path": "<OculusTouchController>{RightHand}/thumbstickClicked",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RightHandClickJoystick",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "29dc8be9-4281-4d18-b9ed-f6ec1beb128b",
                     "path": "<XRController>{LeftHand}/joystickClicked",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LeftHandClickJoystick",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ace8408f-518a-431d-9b2e-08ee5d8542d1",
+                    "path": "<OculusTouchController>{LeftHand}/thumbstickClicked",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

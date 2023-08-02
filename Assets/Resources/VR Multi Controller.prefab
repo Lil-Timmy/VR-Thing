@@ -221,6 +221,52 @@ Transform:
   m_Father: {fileID: 5852554813352197669}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 75, y: 0, z: 0}
+--- !u!1 &4073335027337859057
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7972576667059880591}
+  - component: {fileID: 8866984441505946953}
+  m_Layer: 6
+  m_Name: Collider (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7972576667059880591
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4073335027337859057}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5673341093576284568}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &8866984441505946953
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4073335027337859057}
+  m_Material: {fileID: 13400000, guid: 22e8f97a7e5ae4c469e8ef6f94fa69b9, type: 2}
+  m_IsTrigger: 0
+  m_Enabled: 0
+  m_Radius: 0.05
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.5, z: 0}
 --- !u!1 &4388705654703647305
 GameObject:
   m_ObjectHideFlags: 0
@@ -411,7 +457,7 @@ CapsuleCollider:
   m_Material: {fileID: 13400000, guid: 22e8f97a7e5ae4c469e8ef6f94fa69b9, type: 2}
   m_IsTrigger: 0
   m_Enabled: 1
-  m_Radius: 0.05
+  m_Radius: 0.12
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 0.5, z: 0}
@@ -496,16 +542,13 @@ MonoBehaviour:
   bodyRotation: {fileID: 9188413064331534524}
   orientation: {fileID: 5673341092525375222}
   rotationSensitivity: 150
-  joystickDeadzone: 0.1
-  defaultMoveSpeed: 15
+  joystickDeadzone: 0.3
+  defaultMoveSpeed: 2
   airMultiplier: 0.5
   sprintMultiplier: 1.5
+  jumpForce: 4
   crouchMultiplier: 0.7
   crouchHeight: 0.4
-  handMovementJumpForce: 0.575
-  maxHandMovementJump: 0.25
-  jumpForce: 4
-  canFly: 0
   groundCheckDist: 0.1
   groundCheckLayer:
     serializedVersion: 2
@@ -662,6 +705,7 @@ Transform:
   - {fileID: 5673341092959647594}
   - {fileID: 5673341092525375222}
   - {fileID: 5484492064830327224}
+  - {fileID: 7972576667059880591}
   m_Father: {fileID: 5673341093197043219}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

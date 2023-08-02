@@ -23,18 +23,15 @@ public class VRController : MonoBehaviourPunCallbacks
     [SerializeField] float defaultMoveSpeed;
     [SerializeField] float airMultiplier;
     [SerializeField] float sprintMultiplier;
+
+    [SerializeField] float jumpForce;
+
     [SerializeField] float crouchMultiplier;
     [SerializeField] float crouchHeight;
-
-    [SerializeField] float handMovementJumpForce;
-    [SerializeField] float maxHandMovementJump;
-    [SerializeField] float jumpForce;
-    [SerializeField] bool canFly;
 
     [SerializeField] float groundCheckDist;
     [SerializeField] LayerMask groundCheckLayer;
 
-    bool prevJumpPress;
     bool isGrounded;
     float currentCrouchHeight;
 
@@ -43,6 +40,8 @@ public class VRController : MonoBehaviourPunCallbacks
     Vector3 prevLeftHandPos;
     float ceilingHeight;
     float prevCeilingHeight;
+    float currentRotation;
+    float prevCrouchHeight;
     
     void Awake()
     {
@@ -56,31 +55,46 @@ public class VRController : MonoBehaviourPunCallbacks
         }
     }
 
-    void Update()
+    void LateUpdate()
     {
+        // Sets raycast from 1x groundCheckDist Height above bodyCapsuleBottom 2x groundCheckDist Below.
         isGrounded = Physics.Raycast(new Vector3(bodyCapsule.transform.position.x + bodyCapsule.center.x, bodyCapsule.transform.position.y + groundCheckDist, bodyCapsule.transform.position.z + bodyCapsule.center.z), Vector3.down, out RaycastHit groundRay, groundCheckDist * 2, groundCheckLayer);
-        Debug.DrawRay(new Vector3(bodyCapsule.transform.position.x + bodyCapsule.center.x, bodyCapsule.transform.position.y + groundCheckDist, bodyCapsule.transform.position.z + bodyCapsule.center.z), Vector3.down * groundCheckDist * 2, Color.red, 0.2f);    
+        
+        Jump();
 
         Rotation();
 
         Limbs();
-        
-        Movement();
 
         CapsuleHeight();
 
         prevRightHandPos = PlayerInput.rightHandPosition;
         prevLeftHandPos = PlayerInput.leftHandPosition;
 
-        photonView.RPC("SyncProperties", RpcTarget.Others, headset.position, headset.rotation, rightHand.position, rightHand.rotation, leftHand.position, leftHand.rotation, PlayerInput.leftHandClickJoystick);
+        photonView.RPC("SyncProperties", RpcTarget.Others, headset.position, headset.rotation, rightHand.position, rightHand.rotation, leftHand.position, leftHand.rotation);
     }
 
-    float currentRotation;
+    Vector3 prevPos;
+    void FixedUpdate()
+    {
+        Movement();
+    }
+
+    void Jump()
+    {
+        // Tries to execute a jump.
+        if (PlayerInput.rightHandPrimary && isGrounded)
+        {
+            bodyRb.velocity = new Vector3 (bodyRb.velocity.x, jumpForce, bodyRb.velocity.z);
+        }
+    }
+
     void Rotation()
     {
-        //Direction of movement.
+        // Direction of movement.
         orientation.rotation = Quaternion.Euler(0f, headset.rotation.eulerAngles.y, 0f);
         orientation.position = headset.position;
+        // Turning rotation + turning hand rot calcs.
         if (PlayerInput.rightHandJoystick.x > joystickDeadzone || PlayerInput.rightHandJoystick.x < -joystickDeadzone)
         {
             float addedRot = PlayerInput.rightHandJoystick.x * rotationSensitivity * Time.deltaTime;
@@ -92,7 +106,6 @@ public class VRController : MonoBehaviourPunCallbacks
         }
     }
 
-    float prevCrouchHeight;
     void Movement()
     {
         if (PlayerInput.rightHandClickJoystick)
@@ -114,51 +127,26 @@ public class VRController : MonoBehaviourPunCallbacks
         // Crouch & sprint check.
         if (PlayerInput.rightHandClickJoystick)
         {
-            bodyRb.AddForce(moveVector * crouchMultiplier * Time.deltaTime, ForceMode.Impulse);
+            bodyRb.AddForce(moveVector * crouchMultiplier, ForceMode.Force);
         }
         else if (PlayerInput.leftHandClickJoystick)
         {
-            bodyRb.AddForce(moveVector * sprintMultiplier * Time.deltaTime, ForceMode.Impulse);
+            bodyRb.AddForce(moveVector * sprintMultiplier, ForceMode.Force);
         }
         else
         {
-            bodyRb.AddForce(moveVector * Time.deltaTime, ForceMode.Impulse);
+            transform.Translate(moveVector * Time.fixedDeltaTime, Space.World);
+            //bodyRb.AddForce(moveVector, ForceMode.Force);
         }
         
         if (isGrounded)
         {
-            //Slowing down body to create fake friction.
+            // Slowing down body to create fake friction.
             bodyRb.velocity = new Vector3(bodyRb.velocity.x * 0.9f, bodyRb.velocity.y, bodyRb.velocity.z * 0.9f);
         }
         else
         {
             bodyRb.velocity = new Vector3(bodyRb.velocity.x * 0.97f, bodyRb.velocity.y, bodyRb.velocity.z * 0.97f);
-        }
-
-        if (isGrounded || canFly)
-        {
-            if (PlayerInput.rightHandSecondary)
-            {
-                Vector3 handMovement = (prevRightHandPos - PlayerInput.rightHandPosition) * Time.deltaTime / Time.fixedDeltaTime * 15f;
-                handMovement = handMovement.x * bodyRotation.right + handMovement.y * bodyRotation.up + handMovement.z * bodyRotation.forward;
-                bodyRb.velocity += new Vector3(handMovement.x, Mathf.Clamp(handMovement.y * handMovementJumpForce, -maxHandMovementJump, maxHandMovementJump), handMovement.z);
-            }
-            if (PlayerInput.leftHandSecondary)
-            {
-                Vector3 handMovement = (prevLeftHandPos - PlayerInput.leftHandPosition) * Time.deltaTime / Time.fixedDeltaTime * 15f;
-                handMovement = handMovement.x * bodyRotation.right + handMovement.y * bodyRotation.up + handMovement.z * bodyRotation.forward;
-                bodyRb.velocity += new Vector3(handMovement.x, Mathf.Clamp(handMovement.y * handMovementJumpForce, -maxHandMovementJump, maxHandMovementJump), handMovement.z);
-            }
-        }
-
-        if (PlayerInput.rightHandPrimary && !prevJumpPress && isGrounded)
-        {
-            bodyRb.velocity = new Vector3 (bodyRb.velocity.x, jumpForce, bodyRb.velocity.z);
-            prevJumpPress = PlayerInput.rightHandPrimary;
-        }
-        if (!PlayerInput.rightHandPrimary)
-        {
-            prevJumpPress = false;
         }
     }
 
@@ -185,6 +173,8 @@ public class VRController : MonoBehaviourPunCallbacks
             ceilingHeight = 0f;
         }
         bodyCapsule.center = new Vector3(headset.localPosition.x, bodyCapsule.height / 2, headset.localPosition.z);
+        Debug.Log(Vector3.Magnitude(headset.position - prevPos) * Time.deltaTime / Time.fixedDeltaTime / Time.fixedDeltaTime);
+        prevPos = headset.position;
     }
 
     void Limbs()
@@ -210,9 +200,8 @@ public class VRController : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    void SyncProperties(Vector3 _headsetPos, Quaternion _headsetRot, Vector3 _rightHandPos, Quaternion _rightHandRot, Vector3 _leftHandPos, Quaternion _leftHandRot, bool click)
+    void SyncProperties(Vector3 _headsetPos, Quaternion _headsetRot, Vector3 _rightHandPos, Quaternion _rightHandRot, Vector3 _leftHandPos, Quaternion _leftHandRot)
     {
-        Debug.Log(click);
         headset.position = Vector3.Lerp(headset.position, _headsetPos, Time.deltaTime / Time.fixedDeltaTime * 0.5f);
         headset.rotation = Quaternion.Lerp(headset.rotation, _headsetRot, Time.deltaTime / Time.fixedDeltaTime * 0.5f);
 
