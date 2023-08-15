@@ -2,181 +2,120 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using Photon.Realtime;
 
-public class ObjectManager : MonoBehaviourPun
+public class ObjectManager : MonoBehaviourPunCallbacks
 {
-    [SerializeField] Vector3 oneHandGrabOffset = new Vector3(210, 180, 180);
+    [SerializeField] Quaternion oneHandRotationOffset = Quaternion.Euler(295f, 180f, 0f);
+    [SerializeField] Vector3 oneHandPositionOffset = new Vector3(0f, 0.01f, 0f);
+    [SerializeField] Quaternion twoHandRotationOffset = Quaternion.Euler(0f, 180f, 0f);
 
-    [SerializeField] bool tracksecondHandRotation;
-
-
-    public bool isTwoHands;
-    [HideInInspector] public bool isGrabbed;
-    [HideInInspector] public HandManager firstHand;
-    [HideInInspector] public HandManager secondHand;
+    public Transform[] grabPoints;
+    public bool isGrabbed;
+    public HandManager[] hands;
+    public HandManager lastGrabbedHand;
 
     Rigidbody objectRb;
-    float objectGrabSpeed;
-    float objectSmoothSpeed;
 
     void Awake()
     {
+        // Object layer == 8.
+        gameObject.layer = 8;
+
         objectRb = GetComponent<Rigidbody>();
     }
 
-    public void GrabObject(HandManager _handGrabbedWith, bool _pullObject, float _grabSpeed, float _smoothSpeed)
-    {
-        objectGrabSpeed = _grabSpeed;
-        objectSmoothSpeed = _smoothSpeed;
-        objectRb.isKinematic = true;
-
-        if (!isTwoHands || firstHand == null)
-        {
-            firstHand = _handGrabbedWith;
-            photonView.TransferOwnership(firstHand.photonView.Owner);
-            // If first hand & distance grab.
-            if (_pullObject)
-            {
-                StartCoroutine(PullObject());
-            }
-            else
-            {
-                isGrabbed = true;
-            }
-        }
-        else
-        {
-            // Set to two hand grabbing and just swap to it in LateUpdate.
-            secondHand = _handGrabbedWith;
-        }
-    }
-
-    IEnumerator PullObject()
-    {
-        //Only occurs if it's the first hand to grab the object.
-        float currentTime = 0f;
-        float startingTime = Time.time;
-        Vector3 startingPosition = transform.position;
-        Quaternion startingRotation = transform.rotation;
-        while (firstHand.isGrabbing && currentTime < 1)
-        {
-            float timeMultiplier = Time.time - startingTime;
-
-            currentTime = Mathf.Clamp01(timeMultiplier * timeMultiplier * objectGrabSpeed);
-            transform.position = Vector3.Lerp(startingPosition, firstHand.transform.position, currentTime);
-            transform.rotation = Quaternion.Lerp(startingRotation, firstHand.transform.rotation, currentTime);
-            photonView.RPC("SyncObject", RpcTarget.Others, transform.position, transform.rotation, firstHand.photonView.ViewID, -1);
-
-            yield return new WaitForFixedUpdate();
-        }
-        prevPos = firstHand.transform.position;
-        prevRot = firstHand.transform.eulerAngles;
-        isGrabbed = true;
-    }
-
-    Vector3 prevPos;
-    Vector3 prevRot;
     void LateUpdate()
     {
+        // If there is at least one hand, update the object to move there, than any additional hands will be calculated too.
         if (isGrabbed)
         {
-            if (secondHand != null)
+            Vector3 prevPos = transform.position;
+            Quaternion prevRot = transform.rotation;
+
+            ObjectGrabbed();
+
+            transform.position = Vector3.Lerp(prevPos, transform.position, Time.deltaTime / Time.fixedDeltaTime * 0.5f);
+            transform.rotation = Quaternion.Lerp(prevRot, transform.rotation, Time.deltaTime / Time.fixedDeltaTime * 0.3f);
+        }
+
+        SetPhysics();
+    }
+
+    void ObjectGrabbed()
+    {
+        // Check which hands to use. (both, first, or second)
+        if (hands[0] != null)
+        {
+            // First AND Second
+            if (hands[1] != null)
             {
                 TwohandGrab();
             }
-            else if (firstHand != null)
+            // ONLY First
+            else
             {
-                OneHandGrab();
+                OneHandGrab(0);
             }
         }
-    }
-
-    void OneHandGrab()
-    {
-        if (firstHand.isGrabbing)
+        // ONLY Second
+        else if (hands[1] != null && hands[1].currentObject)
         {
-            transform.position = firstHand.transform.position;
-            transform.rotation = Quaternion.Lerp(transform.rotation, firstHand.transform.rotation * Quaternion.Euler(oneHandGrabOffset), Time.deltaTime * objectSmoothSpeed);
-            prevPos = firstHand.transform.position;
-            prevRot = firstHand.transform.eulerAngles;
-            photonView.RPC("SyncObject", RpcTarget.Others, transform.position, transform.rotation, firstHand.photonView.ViewID, -1);
+            OneHandGrab(1);
         }
         else
         {
-            // Let go of object.
-
-            objectRb.isKinematic = false;
-            objectRb.angularVelocity = (firstHand.transform.eulerAngles - prevRot) * 0.0175f * Time.deltaTime / Time.fixedDeltaTime;
-            objectRb.velocity = (firstHand.transform.position - prevPos) * Time.deltaTime / (Time.fixedDeltaTime * Time.deltaTime * 1.4f);
             isGrabbed = false;
-            firstHand = null;
-            photonView.RPC("SyncRelease", RpcTarget.Others, objectRb.velocity, objectRb.angularVelocity);
+            hands[0] = null;
+            hands[1] = null;
         }
     }
+
+    void OneHandGrab(int _handPoint)
+    {
+        Vector3 grabOffset = oneHandPositionOffset.z * Vector3.forward + oneHandPositionOffset.x * Vector3.right + oneHandPositionOffset.y * Vector3.up;
+        transform.position = hands[_handPoint].transform.position + transform.position - grabPoints[_handPoint].position + grabOffset;
+        transform.rotation = hands[_handPoint].transform.rotation * oneHandRotationOffset;
+    }
+
     void TwohandGrab()
     {
-        if (firstHand.isGrabbing && secondHand.isGrabbing)
-        {
-            transform.position = firstHand.transform.position;
+        transform.position = hands[0].transform.position + transform.position - grabPoints[0].position;
 
-            // Second hand look towards grabbing.
-            Quaternion lookRotation = Quaternion.LookRotation(secondHand.transform.position - transform.position);
-            Vector3 gripRotation = new Vector3(0f, 0f, (secondHand.transform.eulerAngles.z - firstHand.transform.eulerAngles.z) * 0.5f + firstHand.transform.eulerAngles.z);
-            float firstHandRot = firstHand.transform.eulerAngles.z;
-            float secondHandRot = secondHand.transform.eulerAngles.z;
-            if (firstHandRot > 180 && secondHandRot < 180 || firstHandRot < 180 && secondHandRot > 180)
-            {
-                gripRotation.z += 180;
-            }
-            lookRotation *= Quaternion.Euler(gripRotation);
-            transform.rotation = Quaternion.Lerp(transform.rotation, lookRotation, Time.deltaTime * objectSmoothSpeed);
-            photonView.RPC("SyncObject", RpcTarget.Others, transform.position, transform.rotation, firstHand.photonView.ViewID, secondHand.photonView.ViewID);
-        }
-        else
+        // Second hand look towards grabbing.
+        Quaternion lookRotation = Quaternion.LookRotation(hands[1].currentController.position - transform.position, Vector3.up);
+        Vector3 gripRotation = new Vector3(0f, 0f, (hands[1].currentController.eulerAngles.z - hands[0].currentController.eulerAngles.z) * 0.5f + hands[0].currentController.eulerAngles.z);
+        float firstHandRot = hands[0].currentController.eulerAngles.z;
+        float secondHandRot = hands[1].currentController.eulerAngles.z;
+        if (firstHandRot > 180 && secondHandRot < 180 || firstHandRot < 180 && secondHandRot > 180)
         {
-            // Swap second to first hand or change to one hand grabbing.
-            if (!firstHand.isGrabbing)
-            {
-                firstHand = secondHand;
-                secondHand = null;
-            }
-            else if (!secondHand.isGrabbing)
-            {
-                secondHand = null;
-            }
+            gripRotation.z += 180;
         }
+        lookRotation *= Quaternion.Euler(gripRotation) * twoHandRotationOffset;
+        transform.rotation = lookRotation;
     }
 
     [PunRPC]
-    void SyncObject(Vector3 _objectPos, Quaternion _objectRot, int _firstHandId, int _secondHandId)
+    void SetPhysics()
     {
-        objectRb.isKinematic = true;
-        transform.position = _objectPos;
-        transform.rotation = _objectRot;
-
-        firstHand = PhotonView.Find(_firstHandId).GetComponent<HandManager>();
-        if (_secondHandId != -1)
+        // Changes the rigidbody kinematic to on or off, and adds a force when let go.
+        if (isGrabbed)
         {
-            secondHand = PhotonView.Find(_secondHandId).GetComponent<HandManager>();
+            objectRb.isKinematic = true;
         }
         else
         {
-            secondHand = null;
+            if (objectRb.isKinematic)
+            {
+                objectRb.isKinematic = false;
+
+                if (lastGrabbedHand != null)
+                {
+                    objectRb.velocity = lastGrabbedHand.currentVelocity;
+                    objectRb.angularVelocity = lastGrabbedHand.currentAngularVelocity;
+                    lastGrabbedHand = null;
+                }
+            }
         }
-
-        if (photonView.Owner != firstHand.photonView.Owner)
-        {
-            photonView.TransferOwnership(firstHand.photonView.Owner);
-        }
-    }
-
-    [PunRPC]
-    void SyncRelease(Vector3 _velocity, Vector3 _angularVelocity)
-    {
-        objectRb.isKinematic = false;
-        objectRb.velocity = _velocity;
-        objectRb.angularVelocity = _angularVelocity;
-
-        firstHand = null;
     }
 }

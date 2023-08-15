@@ -7,6 +7,9 @@ TagManager:
   - Object
   - NPC
   - Hand
+  - FX Block Zone
+  - Magazine
+  - Constraint
   layers:
   - Default
   - TransparentFX

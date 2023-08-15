@@ -47,7 +47,7 @@ public class JoinRoom : MonoBehaviourPunCallbacks
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        Debug.Log(newPlayer);
+        Debug.Log("Player: " + newPlayer + " joined!");
     }
 
     public override void OnDisconnected(DisconnectCause cause)

@@ -65,6 +65,24 @@ MonoBehaviour:
   - SyncObject
   - SyncRelease
   - AndroidHandOffsets
+  - SwapPlayerGrab
+  - SetMagazineTransform
+  - UpdateMagazine
+  - GrabMagazine
+  - SetSecondHand
+  - Shoot
+  - ReleaseMagazine
+  - ReleaseClientMagazine
+  - SyncValues
+  - UpdateBullet
+  - UpdateGun
+  - SetConstraint
+  - UpdateConstraint
+  - SetCantPlace
+  - BulletCollide
+  - SetObject
+  - SetCollision
+  - SetPhysics
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

@@ -2,13 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
-using UnityEditor;
 
 public class VRController : MonoBehaviourPunCallbacks
 {
     [SerializeField] Transform headset;
-    [SerializeField] Transform rightHandTracker;
-    [SerializeField] Transform leftHandTracker;
     [SerializeField] Transform rightHand;
     [SerializeField] Transform leftHand;
     [SerializeField] Rigidbody bodyRb;
@@ -23,6 +20,7 @@ public class VRController : MonoBehaviourPunCallbacks
     [SerializeField] float defaultMoveSpeed;
     [SerializeField] float airMultiplier;
     [SerializeField] float sprintMultiplier;
+    [SerializeField] float accelerationSpeed;
 
     [SerializeField] float jumpForce;
 
@@ -42,6 +40,7 @@ public class VRController : MonoBehaviourPunCallbacks
     float prevCeilingHeight;
     float currentRotation;
     float prevCrouchHeight;
+    Vector3 currentMovementSpeed;
     
     void Awake()
     {
@@ -55,7 +54,7 @@ public class VRController : MonoBehaviourPunCallbacks
         }
     }
 
-    void LateUpdate()
+    void Update()
     {
         // Sets raycast from 1x groundCheckDist Height above bodyCapsuleBottom 2x groundCheckDist Below.
         isGrounded = Physics.Raycast(new Vector3(bodyCapsule.transform.position.x + bodyCapsule.center.x, bodyCapsule.transform.position.y + groundCheckDist, bodyCapsule.transform.position.z + bodyCapsule.center.z), Vector3.down, out RaycastHit groundRay, groundCheckDist * 2, groundCheckLayer);
@@ -68,16 +67,12 @@ public class VRController : MonoBehaviourPunCallbacks
 
         CapsuleHeight();
 
+        Movement();
+
         prevRightHandPos = PlayerInput.rightHandPosition;
         prevLeftHandPos = PlayerInput.leftHandPosition;
 
         photonView.RPC("SyncProperties", RpcTarget.Others, headset.position, headset.rotation, rightHand.position, rightHand.rotation, leftHand.position, leftHand.rotation);
-    }
-
-    Vector3 prevPos;
-    void FixedUpdate()
-    {
-        Movement();
     }
 
     void Jump()
@@ -101,8 +96,8 @@ public class VRController : MonoBehaviourPunCallbacks
             currentRotation += addedRot;
             bodyRotation.localRotation = Quaternion.Euler(0f, currentRotation, 0f);
 
-            rightHandTracker.RotateAround(orientation.position, Vector3.up, addedRot);
-            leftHandTracker.RotateAround(orientation.position, Vector3.up, addedRot);
+            rightHand.RotateAround(orientation.position, Vector3.up, addedRot);
+            leftHand.RotateAround(orientation.position, Vector3.up, addedRot);
         }
     }
 
@@ -127,27 +122,19 @@ public class VRController : MonoBehaviourPunCallbacks
         // Crouch & sprint check.
         if (PlayerInput.rightHandClickJoystick)
         {
-            bodyRb.AddForce(moveVector * crouchMultiplier, ForceMode.Force);
+            currentMovementSpeed = Vector3.Lerp(currentMovementSpeed, moveVector * crouchMultiplier, Time.deltaTime / Time.fixedDeltaTime * accelerationSpeed);
         }
         else if (PlayerInput.leftHandClickJoystick)
         {
-            bodyRb.AddForce(moveVector * sprintMultiplier, ForceMode.Force);
+            currentMovementSpeed = Vector3.Lerp(currentMovementSpeed, moveVector * sprintMultiplier, Time.deltaTime / Time.fixedDeltaTime * accelerationSpeed);
         }
         else
         {
-            transform.Translate(moveVector * Time.fixedDeltaTime, Space.World);
-            //bodyRb.AddForce(moveVector, ForceMode.Force);
+            currentMovementSpeed = Vector3.Lerp(currentMovementSpeed, moveVector, Time.deltaTime / Time.fixedDeltaTime * accelerationSpeed);
         }
-        
-        if (isGrounded)
-        {
-            // Slowing down body to create fake friction.
-            bodyRb.velocity = new Vector3(bodyRb.velocity.x * 0.9f, bodyRb.velocity.y, bodyRb.velocity.z * 0.9f);
-        }
-        else
-        {
-            bodyRb.velocity = new Vector3(bodyRb.velocity.x * 0.97f, bodyRb.velocity.y, bodyRb.velocity.z * 0.97f);
-        }
+        transform.Translate(currentMovementSpeed * Time.deltaTime, Space.World);
+
+        bodyRb.velocity = new Vector3(0.9f * bodyRb.velocity.x, bodyRb.velocity.y, 0.9f * bodyRb.velocity.z);
     }
 
     void CapsuleHeight()
@@ -173,30 +160,21 @@ public class VRController : MonoBehaviourPunCallbacks
             ceilingHeight = 0f;
         }
         bodyCapsule.center = new Vector3(headset.localPosition.x, bodyCapsule.height / 2, headset.localPosition.z);
-        Debug.Log(Vector3.Magnitude(headset.position - prevPos) * Time.deltaTime / Time.fixedDeltaTime / Time.fixedDeltaTime);
-        prevPos = headset.position;
     }
 
     void Limbs()
     {
-        // Tracker hands.
-        rightHandTracker.localPosition += bodyRotation.forward * (PlayerInput.rightHandPosition.z - prevRightHandPos.z) + bodyRotation.right * (PlayerInput.rightHandPosition.x - prevRightHandPos.x) + bodyRotation.up * (PlayerInput.rightHandPosition.y - prevRightHandPos.y);
-        rightHandTracker.localRotation = Quaternion.Euler(PlayerInput.rightHandRotation.eulerAngles.x, PlayerInput.rightHandRotation.eulerAngles.y + currentRotation, PlayerInput.rightHandRotation.eulerAngles.z) * Quaternion.Euler(24f, 0f, 0f);
+        // Add onto current hand position with difference of movement.
+        rightHand.localPosition += bodyRotation.forward * (PlayerInput.rightHandPosition.z - prevRightHandPos.z) + bodyRotation.right * (PlayerInput.rightHandPosition.x - prevRightHandPos.x) + bodyRotation.up * (PlayerInput.rightHandPosition.y - prevRightHandPos.y);
+        rightHand.localRotation = Quaternion.Euler(PlayerInput.rightHandRotation.eulerAngles.x, PlayerInput.rightHandRotation.eulerAngles.y + currentRotation, PlayerInput.rightHandRotation.eulerAngles.z) * Quaternion.Euler(24f, 0f, 0f);
 
-        leftHandTracker.localPosition += bodyRotation.forward * (PlayerInput.leftHandPosition.z - prevLeftHandPos.z) + bodyRotation.right * (PlayerInput.leftHandPosition.x - prevLeftHandPos.x) + bodyRotation.up * (PlayerInput.leftHandPosition.y - prevLeftHandPos.y);
-        leftHandTracker.localRotation = Quaternion.Euler(PlayerInput.leftHandRotation.eulerAngles.x, PlayerInput.leftHandRotation.eulerAngles.y + currentRotation, PlayerInput.leftHandRotation.eulerAngles.z) * Quaternion.Euler(24f, 0f, 0f);
+        leftHand.localPosition += bodyRotation.forward * (PlayerInput.leftHandPosition.z - prevLeftHandPos.z) + bodyRotation.right * (PlayerInput.leftHandPosition.x - prevLeftHandPos.x) + bodyRotation.up * (PlayerInput.leftHandPosition.y - prevLeftHandPos.y);
+        leftHand.localRotation = Quaternion.Euler(PlayerInput.leftHandRotation.eulerAngles.x, PlayerInput.leftHandRotation.eulerAngles.y + currentRotation, PlayerInput.leftHandRotation.eulerAngles.z) * Quaternion.Euler(24f, 0f, 0f);
 
-        rightHandTracker.position += Vector3.down * (ceilingHeight - prevCeilingHeight + (currentCrouchHeight - prevCrouchHeight));
-        leftHandTracker.position += Vector3.down * (ceilingHeight - prevCeilingHeight + (currentCrouchHeight - prevCrouchHeight));
+        rightHand.position += Vector3.down * (ceilingHeight - prevCeilingHeight + (currentCrouchHeight - prevCrouchHeight));
+        leftHand.position += Vector3.down * (ceilingHeight - prevCeilingHeight + (currentCrouchHeight - prevCrouchHeight));
         prevCeilingHeight = ceilingHeight;
         prevCrouchHeight = currentCrouchHeight;
-
-        // Actual mesh hands.
-        rightHand.position = Vector3.Lerp(rightHand.position, rightHandTracker.position, Time.deltaTime / Time.fixedDeltaTime * 0.5f);
-        rightHand.rotation = Quaternion.Lerp(rightHand.rotation, rightHandTracker.rotation, Time.deltaTime / Time.fixedDeltaTime * 0.5f);
-
-        leftHand.position = Vector3.Lerp(leftHand.position, leftHandTracker.position, Time.deltaTime / Time.fixedDeltaTime * 0.5f);
-        leftHand.rotation = Quaternion.Lerp(leftHand.rotation, leftHandTracker.rotation, Time.deltaTime / Time.fixedDeltaTime * 0.5f);
     }
 
     [PunRPC]
